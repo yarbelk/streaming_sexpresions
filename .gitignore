@@ -1,0 +1,49 @@
+*.py[co]
+.Python
+
+# Packages
+*.egg
+*.egg-info
+dist
+build
+eggs
+parts
+bin
+include
+#lib
+tmp
+develop-eggs
+.installed.cfg
+.settings
+
+# emacs files
+*#
+*~
+
+# vim files
+*.swp
+*.swo
+
+# ropeproject
+.ropeproject
+
+
+XSXC
+# Installer logs
+pip-log.txt
+
+# Unit test / coverage reports
+.coverage
+.tox
+.project
+.pydevproject
+
+# PyCharm
+.idea
+
+# Rope
+.ropeproject/
+
+
+# Thumbs from windows.
+Thumbs.db
