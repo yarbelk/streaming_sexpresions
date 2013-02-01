@@ -1,6 +1,10 @@
 """
 Basic object to hold an s-expression cargo/list, etc.
+
+Think about using Stackless and channels.
 """
+
+
 
 nil = lambda: None
 
@@ -16,7 +20,18 @@ class Node(object):
         return self.__unicode__()
 
     def __len__(self, count=0):
+        """assuming i'm just a list."""
         return len(self.next(), count+1) if self.next() else count
+
+    def depth(self, depth=0):
+        l_depth = r_depth = 0
+        depth += 1
+        if type(self.car) == Node:
+            l_depth = self.car.depth(depth)
+        if type(self.cdr) == Node:
+            r_depth = self.cdr.depth(depth)
+        return max(l_depth, r_depth, depth)
+
 
     def __nonzero__(self):
         return self.car is not None and self.car != nil
