@@ -1,15 +1,16 @@
 """
 Basic object to hold an s-expression cargo/list, etc.
 
-Think about using Stackless and channels.
 """
-
-
+from greenlet import greenlet
 
 nil = lambda: None
 
 class Node(object):
-    def __init__(self, cargo=None, next=nil):
+    _nil = nil
+    def __init__(self, cargo=None, next=None):
+        if next is None:
+            next = self._nil  # lets me do some fun things without metaclasisng it yet
         self._car = cargo
         self._cdr = next
 
@@ -36,26 +37,30 @@ class Node(object):
     def __nonzero__(self):
         return self.car is not None and self.car != nil
 
-    def __getattr__(self, name):
-        if name in ['car', 'cdr']:
-            name = '_{name}'.format(name=name)
-            try:
-                return self.__dict__[name]()
-            except:
-                return self.__dict__[name]
-        else:
-            raise AttributeError("{name} attribute not found".format(name=name))
+    @property
+    def car(self):
+        try:
+            return self._car()
+        except:
+            return self._car
+
+    @property
+    def cdr(self):
+        try:
+            return self._cdr()
+        except:
+            return self._cdr
 
     def __iter__(self):
         return self._pre_order()
 
     def _pre_order(self):
-        if type(self.car) != Node:
+        if not isinstance(self.car, Node):
             yield self.car
         else:
             for cargo in self.car:
                 yield cargo
-        if type(self.cdr) != Node:
+        if not isinstance(self.cdr, Node):
             yield self.cdr
         else:
             for cargo in self.cdr:
@@ -63,6 +68,80 @@ class Node(object):
 
     def next(self):
         return self.cdr
+
+    @classmethod
+    def parse(cls, data):
+        parser = Parser(data, cls)
+        return parser()
+
+
+class LazyNode(Node):
+    _nil = None
+    @property
+    def car(self):
+        if isinstance(self._car, GreenParser):
+            green_parser = self._car
+            self._car = green_parser.switch()
+        return self._car
+
+    @property
+    def cdr(self):
+        if isinstance(self._cdr,GreenParser):
+            green_parser = self._cdr
+            self._cdr = green_parser.switch()
+        return self._cdr
+
+    @classmethod
+    def parse(cls, data):
+        parser = GreenParser(data, cls)
+        return parser()
+
+
+class Parser(object):
+    _nil = nil
+
+    def __init__(self, data, node_class):
+        self._data = data
+        self.node_class = node_class
+
+    def get_node(self):
+        """Return a Node with the cargo and a Parser for cdr (or nil if there
+        is no remaining data)"""
+        split_data = self._data.split(',',1)
+        if len(split_data) == 1:
+            return self.node_class(split_data[0])
+        else:
+            return self.node_class(split_data[0], Parser(split_data[1],
+                self.node_class))
+
+    def __call__(self):
+        return self.get_node()
+
+
+class GreenParser(greenlet, Parser):
+    def __init__(self, data, node_class):
+        self._data = data
+        self.node_class = node_class
+
+    def parse_data(self):
+        """toy parser."""
+        split_data = self._data.split(',',1)
+        return split_data
+
+    def get_node(self):
+        split_data = self.parse_data()
+        if len(split_data) == 1:
+            return self.node_class(split_data[0])
+        else:
+            return self.node_class(split_data[0], GreenParser(split_data[1],
+                self.node_class))
+
+    def run(self):
+        return self.get_node()
+
+    def __call__(self):
+        cargo = self.switch()
+        return cargo
 
 
 cons = lambda el, lst=nil: Node(el, lst)
