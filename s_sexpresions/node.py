@@ -3,10 +3,16 @@ Basic object to hold an s-expression cargo/list, etc.
 
 """
 from greenlet import greenlet
+import re
 
 nil = lambda: None
 
+_sexpression_regex = re.compile(ur"((?P<open>\()|(?P<close>\)))",re.UNICODE)
+
 class Node(object):
+    """this is really messy.  it was thrown together to test stuff, and then
+    to be used as a base for LazyNode.  it should be cleaned up so it is
+    usable by itself"""
     _nil = nil
     def __init__(self, cargo=None, next=None):
         if next is None:
